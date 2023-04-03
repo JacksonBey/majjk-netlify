@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "bigcommerce": "^0.0.0",
+    "node-bigcommerce": "^4.1.0",
     "stripe": "^11.17.0"
   }
 }

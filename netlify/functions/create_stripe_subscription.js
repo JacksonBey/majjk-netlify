@@ -1,4 +1,4 @@
-const BigCommerce = require('bigcommerce');
+const BigCommerce = require('node-bigcommerce');
 const Stripe = require('stripe');
 
 const stripe = Stripe(process.env.STRIPE_API_KEY);
@@ -11,6 +11,9 @@ const bigCommerce = new BigCommerce({
 
 // QUESTION: how is a subscription product identified?
 
+// sample product id: 112
+// sample order id: 100
+
 // note: subscriptionLineItem, deliveryDateOption, billing_cycle_anchor finding subject to change depending on data structure
 exports.handler = async (event) => {
   try {
@@ -18,21 +21,47 @@ exports.handler = async (event) => {
     const orderId = payload.data.id;
 
     const order = await bigCommerce.get(`/orders/${orderId}`);
-    const orderProducts = await bigCommerce.get(`/orders/${orderId}/products`);
+    const orderProducts = await bigCommerce.get(`/orders/${orderId}/products?include=lineItems.options`);
+    
     const consignments = await bigCommerce.get(`/orders/${orderId}/consignments`);
 
-    // Find the subscription line item and related data
-    // replace with subscription product SKU
-    const subscriptionProductSku = 'sample-subscription-product'; 
+    
+    const customFields = customFieldsResponse.data;
 
-    const subscriptionLineItem = sampleOrder.products.find(
-      (product) => product.sku === subscriptionProductSku
+    console.log('mergedOrderProducts', mergedOrderProducts);
+    console.log('orderProductsWithCustomFields', orderProductsWithCustomFields);
+
+    // console.log('OPTIONS', orderProducts[0].product_options);
+
+
+    // Find the subscription line item and related data
+    const subscriptionLineItem = mergedOrderProducts.products.find(
+      (product) => product.sku === process.env.HARDCODED_SUBSCRIPTION_PRODUCT_SKU
     );
 
     if (subscriptionLineItem) {
-      const deliveryDateOption = subscriptionLineItem.product_options.find(
-        (option) => option.name === 'Delivery Date'
+      // deliveryDateOption = subscriptionLineItem.product_options.find(
+      //   (option) => option.name === 'Delivery Date'
+      // );
+      const customFieldsResponse = await bigCommerce.get(
+        `/catalog/products/${subscriptionLineItem.id}/custom-fields`
       );
+
+      console.log('customFieldsResponse', customFieldsResponse)
+      
+      const customFields = customFieldsResponse.data;
+
+      const productOptions = subscriptionLineItem.product_options;
+      console.log('productOptions', productOptions)
+      // productOptions [ { id: 101, name: 'Delivery Date', value: '2023-04-10' } ] 
+      const deliveryDateOption = productOptions.find(option => option.name === 'Delivery Date');
+   
+      const stripeProductIdField = customFields.find(field => field.name === 'Stripe Product ID');
+      const stripePriceIdField = customFields.find(field => field.name === 'Stripe Price ID');
+      
+      const stripeProductId = stripeProductIdField ? stripeProductIdField.value : null;
+      const stripePriceId = stripePriceIdField ? stripePriceIdField.value : null;
+      
 
       if (deliveryDateOption) {
         const deliveryDate = deliveryDateOption.value;
@@ -73,14 +102,31 @@ exports.handler = async (event) => {
 
 
     // Parse the date modifier value into a JavaScript Date object
-    const deliveryDate = new Date(dateModifierValue);
+    const deliveryDate = new Date(deliveryDateOption.value);
 
     // Calculate the timestamp (in seconds) for the billing_cycle_anchor
     const billingCycleAnchorTimestamp = Math.floor(deliveryDate.getTime() / 1000);
 
+    console.log('subscription create: ', {
+      customer: stripeCustomer.id,
+      items: [{ price: stripePriceId }],
+      /* calculate the timestamp based on the date modifier value */
+      billing_cycle_anchor:  billingCycleAnchorTimestamp,
+    })
+
+    console.log('subscriptiopnline item: ', subscriptionLineItem)
+
+    // const price = await stripe.prices.create({
+    //   currency: 'usd',
+    //   custom_unit_amount: {enabled: true},
+    //   product: subscriptionLineItem.id ,
+    // });
+
+    // console.log('price: ', price)
+
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomer.id,
-      items: [{ price: process.env.HARDCODED_SUBSCRIPTION_PRODUCT_ID }],
+      items: [{ price: stripePriceId}],
       /* calculate the timestamp based on the date modifier value */
       billing_cycle_anchor:  billingCycleAnchorTimestamp,
     });
@@ -148,3 +194,12 @@ const sampleBillingAddress = {
   phone: '555-123-4567',
   email: 'john.doe@example.com',
 };
+
+
+const getOrderCUrl = { curl: `
+curl -X GET \
+  -H "Content-Type: application/json" \
+  -H "X-Auth-Token: b6lh1ab3dz7eegnqyj0ityjs0blj5jf" \
+  -H "X-Auth-Client: 84ht9px9puq9uy2yx40xpztwjy47ndq" \
+  "https://api.bigcommerce.com/stores/q2dar3yy52/v3/orders/100?include=products
+`}
