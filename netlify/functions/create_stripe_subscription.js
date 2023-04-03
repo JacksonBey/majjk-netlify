@@ -9,6 +9,9 @@ const bigCommerce = new BigCommerce({
   responseType: 'json',
 });
 
+// QUESTION: how is a subscription product identified?
+
+// note: subscriptionLineItem, deliveryDateOption, billing_cycle_anchor finding subject to change depending on data structure
 exports.handler = async (event) => {
   try {
     const payload = JSON.parse(event.body);
@@ -19,7 +22,6 @@ exports.handler = async (event) => {
     const consignments = await bigCommerce.get(`/orders/${orderId}/consignments`);
 
     // Find the subscription line item and related data
-    // ...
     // replace with subscription product SKU
     const subscriptionProductSku = 'sample-subscription-product'; 
 
@@ -57,6 +59,7 @@ exports.handler = async (event) => {
       stripeCustomer = await stripe.customers.create({
         email: order.email,
         name: `${order.billing_address.first_name} ${order.billing_address.last_name}`,
+        /* map the order.billing_address fields to Stripe address fields */ 
         address: { 
           line1: order.billing_address.street_1,
           line2: order.billing_address.street_2,
@@ -68,10 +71,18 @@ exports.handler = async (event) => {
       });
     }
 
+
+    // Parse the date modifier value into a JavaScript Date object
+    const deliveryDate = new Date(dateModifierValue);
+
+    // Calculate the timestamp (in seconds) for the billing_cycle_anchor
+    const billingCycleAnchorTimestamp = Math.floor(deliveryDate.getTime() / 1000);
+
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomer.id,
       items: [{ price: process.env.HARDCODED_SUBSCRIPTION_PRODUCT_ID }],
-      billing_cycle_anchor: /* calculate the timestamp based on the date modifier value */,
+      /* calculate the timestamp based on the date modifier value */
+      billing_cycle_anchor:  billingCycleAnchorTimestamp,
     });
 
     await bigCommerce.post(`/orders/${orderId}/messages`, {
