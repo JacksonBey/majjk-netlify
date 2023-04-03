@@ -1,0 +1,24 @@
+{
+  "name": "bigcommerce",
+  "version": "0.0.0",
+  "description": "Node.js client for the Bigcommerce API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Not implemented!\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sgerrand/bigcommerce-node.js"
+  },
+  "keywords": [
+    "bigcommerce",
+    "api",
+    "bigcommerce-api"
+  ],
+  "author": "Sasha Gerrand",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sgerrand/bigcommerce-node.js/issues"
+  },
+  "homepage": "https://github.com/sgerrand/bigcommerce-node.js"
+}
