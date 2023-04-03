@@ -20,6 +20,29 @@ exports.handler = async (event) => {
 
     // Find the subscription line item and related data
     // ...
+    // replace with subscription product SKU
+    const subscriptionProductSku = 'sample-subscription-product'; 
+
+    const subscriptionLineItem = sampleOrder.products.find(
+      (product) => product.sku === subscriptionProductSku
+    );
+
+    if (subscriptionLineItem) {
+      const deliveryDateOption = subscriptionLineItem.product_options.find(
+        (option) => option.name === 'Delivery Date'
+      );
+
+      if (deliveryDateOption) {
+        const deliveryDate = deliveryDateOption.value;
+        console.log('Subscription product delivery date:', deliveryDate);
+      } else {
+        console.log('Delivery date option not found');
+      }
+    } else {
+      console.log('Subscription line item not found');
+    }
+
+
 
     let stripeCustomer;
 
@@ -34,7 +57,14 @@ exports.handler = async (event) => {
       stripeCustomer = await stripe.customers.create({
         email: order.email,
         name: `${order.billing_address.first_name} ${order.billing_address.last_name}`,
-        address: { /* map the order.billing_address fields to Stripe address fields */ },
+        address: { 
+          line1: order.billing_address.street_1,
+          line2: order.billing_address.street_2,
+          city: order.billing_address.city,
+          state: order.billing_address.state,
+          postal_code: order.billing_address.zip,
+          country: order.billing_address.country_iso2,
+        },
       });
     }
 
@@ -61,4 +91,49 @@ exports.handler = async (event) => {
       body: JSON.stringify({ message: 'Error processing subscription' }),
     };
   }
+};
+
+
+
+const sampleOrder = {
+  id: 12345,
+  billing_address: {/* ... */},
+  email: 'john@example.com',
+  products: [
+    {
+      id: 1,
+      name: 'Sample Subscription Product',
+      sku: 'sample-subscription-product',
+      price: 9.99,
+      product_options: [
+        {
+          id: 101,
+          name: 'Delivery Date',
+          value: '2023-04-10',
+        },
+      ],
+    },
+    {
+      id: 2,
+      name: 'Sample Non-Subscription Product',
+      sku: 'sample-non-subscription-product',
+      price: 19.99,
+      product_options: [],
+    },
+  ],
+};
+
+const sampleBillingAddress = {
+  first_name: 'John',
+  last_name: 'Doe',
+  company: 'Acme Inc.',
+  street_1: '123 Main St',
+  street_2: 'Apt 4B',
+  city: 'New York',
+  state: 'NY',
+  zip: '10001',
+  country: 'United States',
+  country_iso2: 'US',
+  phone: '555-123-4567',
+  email: 'john.doe@example.com',
 };
