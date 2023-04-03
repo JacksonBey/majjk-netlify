@@ -20,22 +20,16 @@ exports.handler = async (event) => {
     const payload = JSON.parse(event.body);
     const orderId = payload.data.id;
 
-    const order = await bigCommerce.get(`/orders/${orderId}`);
+    // const order = await bigCommerce.get(`/orders/${orderId}`);
     const orderProducts = await bigCommerce.get(`/orders/${orderId}/products?include=lineItems.options`);
     
     const consignments = await bigCommerce.get(`/orders/${orderId}/consignments`);
-
-    
-    const customFields = customFieldsResponse.data;
-
-    console.log('mergedOrderProducts', mergedOrderProducts);
-    console.log('orderProductsWithCustomFields', orderProductsWithCustomFields);
 
     // console.log('OPTIONS', orderProducts[0].product_options);
 
 
     // Find the subscription line item and related data
-    const subscriptionLineItem = mergedOrderProducts.products.find(
+    const subscriptionLineItem = orderProducts.find(
       (product) => product.sku === process.env.HARDCODED_SUBSCRIPTION_PRODUCT_SKU
     );
 
