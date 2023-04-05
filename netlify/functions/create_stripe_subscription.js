@@ -117,11 +117,60 @@ exports.handler = async (event) => {
       // const deliveryDate = new Date(deliveryDateOption.value);
       const deliveryDate = new Date(deliveryDateOption.value);
       console.log('PAYMENT METHODS: ', paymentMethods)
+      const paymentMethod = {
+        "id": "pm_1MtP1ZGOO2ZYN95SudtSjigR",
+        "object": "payment_method",
+        "billing_details": {
+          "address": {
+            "city": "Bainbridge Island",
+            "country": "US",
+            "line1": "8380 NE Blakely HT DR",
+            "line2": "",
+            "postal_code": "98110",
+            "state": "Washington"
+          },
+          "email": "jenny@example.com",
+          "name": null,
+          "phone": "+15555555555"
+        },
+        "card": {
+          "brand": "visa",
+          "checks": {
+            "address_line1_check": null,
+            "address_postal_code_check": null,
+            "cvc_check": "pass"
+          },
+          "country": "US",
+          "exp_month": 8,
+          "exp_year": 2024,
+          "fingerprint": "VfuRmak5kDcHcsFK",
+          "funding": "credit",
+          "generated_from": null,
+          "last4": "4242",
+          "networks": {
+            "available": [
+              "visa"
+            ],
+            "preferred": null
+          },
+          "three_d_secure_usage": {
+            "supported": true
+          },
+          "wallet": null
+        },
+        "created": 123456789,
+        "customer": null,
+        "livemode": false,
+        "metadata": {
+          "order_id": "123456789"
+        },
+        "type": "card"
+      }
       const defaultPaymentMethod = paymentMethods?.data[0]?.id;
       const subscriptionCreateParams = {
         customer: stripeCustomer.id,
         default_payment_method: defaultPaymentMethod,
-        items: [{ price: "price_1Mst3NGOO2ZYN95StCmNH1ub" }],
+        items: [{ price: "price_1Mst3NGOO2ZYN95StCmNH1ub" }], // box of chocolates stripe price
         ...(isNaN(deliveryDate) ? {} : { billing_cycle_anchor: deliveryDate })
       };
 
@@ -140,10 +189,12 @@ exports.handler = async (event) => {
       // });
       const subscription = await stripe.subscriptions.create(subscriptionCreateParams);
 
-      await bigCommerce.post(`/orders/${orderId}/order_messages`, {
-        message: `Stripe subscription ID: ${subscription.id}`,
-        staff_only: true,
-      });
+      console.log('SUBSCRIPTISON: ', subscription)
+
+      // await bigCommerce.post(`/orders/${orderId}/order_messages`, {
+      //   message: `Stripe subscription ID: ${subscription.id}`,
+      //   staff_only: true,
+      // });
 
       return {
         statusCode: 200,
