@@ -9,11 +9,6 @@ const bigCommerce = new BigCommerce({
   responseType: 'json',
 });
 
-// QUESTION: how is a subscription product identified?
-
-// sample product id: 112
-// sample order id: 100
-
 // note: subscriptionLineItem, deliveryDateOption, billing_cycle_anchor finding subject to change depending on data structure
 exports.handler = async (event) => {
   try {
